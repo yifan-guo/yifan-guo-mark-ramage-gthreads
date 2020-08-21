@@ -1,0 +1,33 @@
+//
+// Created by Yifan Guo on 11/20/16.
+//
+#include <unistd.h>
+#include "uthash.h"
+#include "gthr.c"
+
+
+int main(void)
+{
+    //Setting new timerval and itimerval
+    struct timeval period;
+    struct itimerval repeatingTimer;
+    period.tv_sec = TICK_PERIOD_S;
+    period.tv_usec = TICK_PERIOD_U;
+
+    repeatingTimer.it_interval = period;
+    repeatingTimer.it_value = period;
+
+    gtinit(0, RR);       //set gtcur = gttbl[0] and gttbl[0] to RUNNING
+    init();         //allocate the ready queues
+
+    //set up the signal to occur every TICK_PERIOD_S seconds
+    signal(SIGALRM, sigFunc);
+    setitimer(ITIMER_REAL, &repeatingTimer, NULL);
+
+    printf("Running a FIFO thread of higher priority, and 2 RR threads of lower priority\n");
+    gtgo(f, 90, FIFO);          //initialize gthread and place it on its ready queuee
+    gtgo(f, 40, RR);            //initialize gthread and place it on its ready queuee
+    gtgo(f, 40, RR);            //initialize gthread and place it on its ready queuee
+    gtret(1);       //gttbl[0] calls yield
+
+}
